@@ -141,7 +141,7 @@ def main(fastqFileIN, outFile, tophatFolder):
     run_cmd("rm -rf sequences_*")
     run_cmd("rm -rf " + tophatFolder+"*")
 
-if __name__ == 'main':    
+if __name__ == '__main__':    
     fastqFileIN = sys.argv[1]
     outFile = sys.argv[2]
     tophatFolder = sys.argv[3]
