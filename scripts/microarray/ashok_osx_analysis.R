@@ -1,12 +1,11 @@
-# analysis for ashok
-
-# read in .cel files
-
-# look at cel files
+##### OSX microarray analysis for Ashok #####
+##### A log/history of commands used for exploratory data analysis 
+##### Mainly looking at batch effects, PCA, differential gene expression
+ 
 setwd("C:/Users/kcbrown3/Desktop/")
-
 cel.dir <- "./Ashok/"
 
+##### read in & look at cel files #####
 filenames <- list.files(path=cel.dir, pattern=".CEL")
 
 affy <- ReadAffy(filenames=paste(cel.dir,'/',filenames,sep=''), phenoData=NULL)
@@ -20,15 +19,13 @@ date.info
 hist(affy, col=2:8)
 boxplot(affy, col=2:8)
 
-#created a batch file based on run date in excel. 
-
+##### use a batch file based on run date #####
 batches <- read.csv(file=paste(cel.dir,'batches.csv',sep=''),header=TRUE)
 batches
 batches.rep <- batches[,4]
 mod.type <- batches[,c(6,7,8)]
 
-# create different processed expression matrices
-
+##### create different processed expression matrices #####
 #rma
 bmp2.rma <- rma(affy)
 bmp2.rma <- exprs(bmp2.rma)
@@ -45,8 +42,7 @@ bmp2.combat <- ComBat(dat=bmp2.rma, batch=batches.rep, mod=mod.type)
 # frozen rma + combat, batches same as above
 bmp2.fcombat <- ComBat(dat=bmp2.frma, batch=batches.rep, mod=mod.type)
 
-# comparison by pca
-
+##### comparison by pca #####
 # rma
 pca.rma <- prcomp(t(bmp2.rma))
 summary(pca.rma)
@@ -85,7 +81,6 @@ points(pc1[batches[,6]==16],pc2[batches[,6]==16], pch=20, col=7)
 points(pc1[batches[,6]==20],pc2[batches[,6]==20], pch=20, col=8)
 points(pc1[batches[,6]==24],pc2[batches[,6]==24], pch=20, col=9)
 text(pc1,pc2, labels=batches[,6], col=1, pos=4, offset=0.1, cex=0.8)
-
 
 # combat rma
 pca.combat <- prcomp(t(bmp2.combat))
@@ -204,10 +199,8 @@ points(pc1[batches[,6]==20],pc2[batches[,6]==20], pch=20, col=8)
 points(pc1[batches[,6]==24],pc2[batches[,6]==24], pch=20, col=9)
 text(pc1,pc2, labels=batches[,6], col=1, pos=4, offset=0.1, cex=0.8)
 
-# differential gene summary
-
-#establish groups to compare
-
+##### differential gene summary #####
+##### establish groups to compare #####
 # trt vs control
 trt.fcombat <- bmp2.fcombat[,batches[,7]=="bmp2"]
 con.fcombat <- bmp2.fcombat[,batches[,7]=="control"]
@@ -264,9 +257,7 @@ conend.rma <- bmp2.rma[,c(17,19,21,23)]
 trtend.combat <- bmp2.combat[,c(2,4,5,10,12,13)]
 conend.combat <- bmp2.combat[,c(17,19,21,23)]
 
-
-# sam
-
+##### sam #####
 # rma
 #trt vs. control
 Y <- c(rep(2,12), rep(1,12))
@@ -281,7 +272,7 @@ delta.table <- samr.compute.delta.table(samr.pac,dels=seq(0.024, 0.038, 0.002))
 delta.table
 
 
-#DEGs (Differentially Expressed Genes) Summary.
+##### DEGs (Differentially Expressed Genes) Summary. #####
 siggenes.table<-samr.compute.siggenes.table(samr.pac, 0.032, samdata, delta.table, all.genes=FALSE)
 
 up <- siggenes.table$genes.up
@@ -304,7 +295,7 @@ delta.table <- samr.compute.delta.table(samr.pac,dels=seq(1.192, 1.344, 0.002))
 delta.table
 
 
-#DEGs (Differentially Expressed Genes) Summary.
+##### DEGs (Differentially Expressed Genes) Summary. #####
 siggenes.table<-samr.compute.siggenes.table(samr.pac, 1.316, samdata, delta.table, all.genes=FALSE)
 
 up <- siggenes.table$genes.up
@@ -327,7 +318,7 @@ delta.table <- samr.compute.delta.table(samr.pac,dels=seq(1.498, 1.558, 0.002))
 delta.table
 
 
-#DEGs (Differentially Expressed Genes) Summary.
+##### DEGs (Differentially Expressed Genes) Summary. #####
 siggenes.table<-samr.compute.siggenes.table(samr.pac, 0.339, samdata, delta.table, all.genes=FALSE)
 
 up <- siggenes.table$genes.up
@@ -350,7 +341,7 @@ delta.table <- samr.compute.delta.table(samr.pac,dels=seq(0.256, 0.269, 0.002))
 delta.table
 
 
-#DEGs (Differentially Expressed Genes) Summary.
+##### DEGs (Differentially Expressed Genes) Summary. #####
 siggenes.table<-samr.compute.siggenes.table(samr.pac, 0.266, samdata, delta.table, all.genes=FALSE)
 
 up <- siggenes.table$genes.up
@@ -359,8 +350,7 @@ down <- siggenes.table$genes.lo
 dim(up)
 dim(down)
 
-# t-test
-
+##### t-test #####
 #rma
 trt.ttest <- t.test.discovery(trt.rma,con.rma)
 trt.ttest <- trt.ttest[trt.ttest[,3]<0.001,]
@@ -429,8 +419,7 @@ patient.ttest <- t.test.discovery(a.fcombat,b.fcombat)
 patient.ttest <- patient.ttest[patient.ttest[,3]<0.001,]
 dim(patient.ttest)
 
-# correlation test - trt time
-
+##### correlation test - trt time #####
 #rma
 trt.cor <- cor.test.discovery(trt.rma,trt.time)
 trt.cor <- trt.cor[trt.cor[,3]<0.001,]
@@ -466,13 +455,9 @@ dim(trt.cor)
 con.cor <- cor.test.discovery(con.fcombat,con.time)
 con.cor <- con.cor[con.cor[,3]<0.001,]
 dim(con.cor)
-
 #############################################################################################
-
-
-# look at cel files
+##### look at cel files #####
 setwd("C:/Users/kcbrown3/Desktop/")
-
 cel.dir <- "./Ashok/bmp6/"
 
 filenames <- list.files(path=cel.dir, pattern=".CEL")
@@ -488,14 +473,13 @@ date.info
 hist(affy, col=2:8)
 boxplot(affy, col=2:8)
 
-#created a batch file based on run date in excel. 
-
+##### use a batch file based on run date #####
 batches <- read.csv(file=paste(cel.dir,'bmp6batches.csv',sep=''),header=TRUE)
 batches
 batches.rep <- batches[,4]
 mod.type <- batches[,c(6,7,8)]
 
-# create different processed expression matrices
+##### create different processed expression matrices #####
 
 #rma
 bmp6.rma <- rma(affy)
@@ -507,8 +491,7 @@ bmp6.frma <- frma(affy)
 bmp6.frma <- exprs(bmp6.frma)
 boxplot(bmp6.frma, col=2:8)
 
-# comparison by pca
-
+##### comparison by pca #####
 # rma
 pca.rma <- prcomp(t(bmp6.rma))
 summary(pca.rma)
@@ -540,7 +523,6 @@ points(pc1[batches[,6]==16],pc2[batches[,6]==16], pch=20, col=7)
 points(pc1[batches[,6]==20],pc2[batches[,6]==20], pch=20, col=8)
 points(pc1[batches[,6]==24],pc2[batches[,6]==24], pch=20, col=9)
 text(pc1,pc2, labels=batches[,6], col=1, pos=4, offset=0.1, cex=0.8)
-
 
 # frozen rma
 pca.frma <- prcomp(t(bmp6.frma))
@@ -574,25 +556,12 @@ points(pc1[batches[,6]==20],pc2[batches[,6]==20], pch=20, col=8)
 points(pc1[batches[,6]==24],pc2[batches[,6]==24], pch=20, col=9)
 text(pc1,pc2, labels=batches[,6], col=1, pos=4, offset=0.1, cex=0.8)
 
-
-# differential gene summary
-
-# sam
-
-# t-test
-
-# correlation test - trt time
-
-
 #######################################################################################
-
-# look at cel files
+##### look at cel files #####
 setwd("C:/Users/kcbrown3/Desktop/")
-
 cel.dir <- "./Ashok/CEL Files"
 
-
-#KNOCK DOWN OF OSTERIX
+##### KNOCK DOWN OF OSTERIX #####
 filenames <- list.files(path=cel.dir, pattern=".CEL")
 
 affy <- ReadAffy(filenames=paste(cel.dir,'/',filenames,sep=''), phenoData=NULL)
@@ -629,13 +598,11 @@ text(pc1[7],pc2[7], labels=c( "ContB"), col=1, pos=1, offset=0.2, cex=0.7)
 points(pc1[c(4,8)],pc2[c(4,8)], pch=20, col=5)
 text(pc1[c(4,8)],pc2[c(4,8)], labels=c("ContA+BMP", "ContB+BMP"), col=1, pos=4, offset=0.2, cex=0.7)
 
-
 #frma
 KD.frma <- frma(affy)
 boxplot(KD.frma,col=2:8)
 KD.frma <- exprs(KD.frma)
 KD.frma[1:5,1:8]
-
 
 pca.frma <- prcomp(t(KD.frma))
 summary(pca.frma)
@@ -654,9 +621,7 @@ text(pc1[7],pc2[7], labels=c( "ContB"), col=1, pos=1, offset=0.2, cex=0.7)
 points(pc1[c(4,8)],pc2[c(4,8)], pch=20, col=5)
 text(pc1[c(4,8)],pc2[c(4,8)], labels=c("ContA+BMP", "ContB+BMP"), col=1, pos=4, offset=0.2, cex=0.7)
 
-
-
-# OVER EXPRESSION OF OSTERIX
+##### OVER EXPRESSION OF OSTERIX #####
 filenames <- list.files(path="./Ashok", pattern="ST.CEL")
 
 affy1 <- read.celfiles(filenames=paste("./Ashok",'/',filenames,sep=''))
@@ -792,7 +757,6 @@ text3d(pc1[c(4,7)],pc2[c(4,7)],pc3[c(4,7)], c("OSX OE1+BMP", "OSX OE2+BMP"), adj
 
 snapshot3d(paste(cel.dir,'/',"3D-OE-PCA.png",sep=''), fmt="png")
 
-
 # frma
 OE.frma <- frma(affy2, verbose=TRUE, summarize="median_polish", input.vecs=hugene.1.0.st.v1frmavecs)
 boxplot(OE.frma,col=2:8)
@@ -813,7 +777,6 @@ points(pc1[c(3,6)],pc2[c(3,6)], pch=20, col=4)
 text(pc1[c(3,6)],pc2[c(3,6)], labels=c("OSX OE1", "OSX OE2"), col=1, pos=4, offset=0.1, cex=0.8)
 points(pc1[c(4,7)],pc2[c(4,7)], pch=20, col=5)
 text(pc1[c(4,7)],pc2[c(4,7)], labels=c("OSX OE1+BMP", "OSX OE2+BMP"), col=1, pos=4, offset=0.1, cex=0.8)
-
 
 plot3d(pca.frma$x[,1:3], type="n", main="PCA Summary for fRMA data")
 pc1 <- pca.frma$x[,1]
@@ -844,9 +807,7 @@ contvbmp <- contvbmp[contvbmp[,3]<0.001,]
 contvoe <- t.test.discovery(control1, OE1)
 contvoe <- contvoe[contvoe[,3]<0.001,]
 
-
-
-## SCAN.... frma processed data is missing the osterix row...?
+##### SCAN.... frma processed data is missing the osterix row...? #####
 OE.scan <- SCAN(paste("./Ashok",'/','*ST.CEL', sep=''), verbose=TRUE)
 OE.scan <- exprs(OE.scan)
 OE.scan[1:5,1:5]
@@ -867,7 +828,6 @@ points(pc1[c(3,7)],pc2[c(3,7)], pch=20, col=4)
 text(pc1[c(3,7)],pc2[c(3,7)], labels=c("OSX OE1", "OSX OE2"), col=1, pos=4, offset=0.1, cex=0.8)
 points(pc1[c(4,8)],pc2[c(4,8)], pch=20, col=5)
 text(pc1[c(4,8)],pc2[c(4,8)], labels=c("OSX OE1+BMP", "OSX OE2+BMP"), col=1, pos=4, offset=0.1, cex=0.8)
-
 
 KD.scan <- SCAN(paste(cel.dir,'/','*0.CEL', sep=''), verbose=TRUE)
 KD.scan <- exprs(KD.scan)
@@ -893,11 +853,8 @@ text(pc1[4],pc2[4], labels=c("ContA+BMP"), col=1, pos=2, offset=0.2, cex=0.7)
 points(pc1[8],pc2[8], pch=20, col=5)
 text(pc1[8],pc2[8], labels=c("ContB+BMP"), col=1, pos=4, offset=0.2, cex=0.7)
 
-# look at these - OSX, MMP13, RUN2X MMP1
-
-
-# correlation tests....
-
+##### look at these - OSX, MMP13, RUN2X MMP1 #####
+##### correlation tests.... #####
 # OSX, "1552340_at" && 
 
 #A
@@ -973,8 +930,8 @@ rbind(KD.rma[15406,c(5:8)], KD.rma[71,c(5:8)])
 rbind(rank(KD.rma[15406,c(1:4)]), rank(KD.rma[71,c(1:4)]))
 
 plot(KD.rma[15406,], KD.rma[71,])
-# t-tests....
 
+# t-tests....
 KD.cont.rma <- t.test.discovery(KD.rma[,c(1,5)], KD.rma[,c(3,7)])
 KD.cont.rma <- KD.cont.rma[KD.cont.rma[,3]<0.0001,]
 dim(KD.cont.rma)
@@ -1024,7 +981,6 @@ KD.bmp6.scan <- KD.bmp6.scan[KD.bmp6.scan[,3]<0.0001,]
 dim(KD.bmp6.scan)
 
 # OE
-
 OE.cont.rma <- t.test.discovery(OE.rma1[,c(1,5)], OE.rma1[,c(3,7)])
 OE.cont.rma <- OE.cont.rma[OE.cont.rma[,3]<0.0001,]
 dim(OE.cont.rma)
@@ -1073,9 +1029,7 @@ OE.bmp6.scan <- t.test.discovery(OE.scan[,c(2,6)], OE.scan[,c(3,7)])
 OE.bmp6.scan <- OE.bmp6.scan[OE.bmp6.scan[,3]<0.0001,]
 dim(OE.bmp6.scan)
 
-
-################### KO hugene
-
+################### KO hugene #####
 filenames <- list.files(path=cel.dir, pattern=".CEL")
 
 affy <- read.celfiles(filenames=paste(cel.dir,'/',filenames,sep=''))
@@ -1131,7 +1085,7 @@ points(pc1[c(4,8,12)],pc2[c(4,8,12)], pch=20, col=5)
 text(pc1[c(4,8,12)],pc2[c(4,8,12)], labels=c("OSX KD1+BMP", "OSX KD2+BMP", "OSX KD3+BMP"), col=1, pos=4, offset=0.1, cex=0.8)
 
 
-## SCAN.... frma processed data is missing the osterix row...?
+##### SCAN.... frma processed data is missing the osterix row...?
 KD.scan <- SCAN(paste(cel.dir,'/','*.CEL', sep=''), verbose=TRUE)
 KD.scan <- exprs(KD.scan)
 KD.scan[1:5,1:5]
@@ -1153,9 +1107,7 @@ text(pc1[c(3,7,11)],pc2[c(3,7,11)], labels=c("OSX KD1", "OSX KD2", "OSX KD3"), c
 points(pc1[c(4,8,12)],pc2[c(4,8,12)], pch=20, col=5)
 text(pc1[c(4,8,12)],pc2[c(4,8,12)], labels=c("OSX KD1+BMP", "OSX KD2+BMP", "OSX KD3+BMP"), col=1, pos=4, offset=0.1, cex=0.8)
 
-
-# RMA processed separately, then PCA together....
-
+##### RMA processed separately, then PCA together....
 pca.rma <- prcomp(t(cbind(KD.rma1, OE.rma1)))
 summary(pca.rma)
 
@@ -1180,8 +1132,7 @@ text(pc1[c(15,19)],pc2[c(15,19)], labels=c("OSX OE1", "OSX OE2"), col=1, pos=4, 
 points(pc1[c(16,20)],pc2[c(16,20)], pch=20, col=5)
 text(pc1[c(16,20)],pc2[c(16,20)], labels=c("OSX OE1+BMP", "OSX OE2+BMP"), col=1, pos=4, offset=0.1, cex=0.8)
 
-# SCAN then put together for PCA...
-
+##### SCAN then put together for PCA...
 pca.scan <- prcomp(t(cbind(KD.scan,OE.scan)))
 summary(pca.scan)
 
@@ -1207,8 +1158,7 @@ points(pc1[c(16,20)],pc2[c(16,20)], pch=20, col=5)
 text(pc1[c(16,20)],pc2[c(16,20)], labels=c("OSX OE1+BMP", "OSX OE2+BMP"), col=1, pos=4, offset=0.1, cex=0.8)
 
 
-#### process all the data together. 
-
+##### process all the data together. #####
 filenames1 <- list.files(path=cel.dir, pattern=".CEL")
 filenames2<- list.files(path="./Ashok", pattern="ST.CEL")
 
@@ -1219,7 +1169,6 @@ rma2 <- rma(affy3)
 rma2<-exprs(rma2)
 
 # RMA processed separately, then PCA together....
-
 pca.rma <- prcomp(t(rma2))
 summary(pca.rma)
 
@@ -1244,12 +1193,11 @@ text(pc1[c(15,19)],pc2[c(15,19)], labels=c("OSX OE1", "OSX OE2"), col=1, pos=4, 
 points(pc1[c(16,20)],pc2[c(16,20)], pch=20, col=5)
 text(pc1[c(16,20)],pc2[c(16,20)], labels=c("OSX OE1+BMP", "OSX OE2+BMP"), col=1, pos=4, offset=0.1, cex=0.8)
 
-#scan processing should remain the same due to the fact that it uses only information within each array to normalize instead of depending on the group
+###### scan processing should remain the same due to the fact that it uses only 
+###### information within each array to normalize instead of depending on the group
 
-#### Combat processing
-
-#batch info...
-
+###### Combat processing
+# batch info...
 fileinfo <- read.csv(file="/Volumes/DanT-2TB/batcheinfo.csv", header=TRUE)
 fileinfo
 rownames(fileinfo) <- fileinfo[,1]
@@ -1261,7 +1209,7 @@ mod <- fileinfo[,4:5,drop=FALSE]
 mod <- fileinfo[,3,drop=FALSE]
 mod
 
-# combat function using data RMA processed separately
+##### combat function using data RMA processed separately
 combat.sep1 <- ComBat(dat=cbind(OE.rma1, KD.rma1) , batch=batches, mod=mod)
 combat.sep[1:5,1:5]
 combat.sep1 <- cbind(combat.sep1[,9:20], combat.sep1[,1:8])
@@ -1295,7 +1243,7 @@ text(pc1[c(19)],pc2[c(19)], labels=c("OSX OE2"), col=1, pos=3, offset=0.2, cex=0
 points(pc1[c(16,20)],pc2[c(16,20)], pch=20, col=5)
 text(pc1[c(16,20)],pc2[c(16,20)], labels=c("OSX OE1+BMP", "OSX OE2+BMP"), col=1, pos=3, offset=0.2, cex=0.8)
 
-# combat function using data RMA processed together
+##### combat function using data RMA processed together
 combat.tog1 <- ComBat(dat=cbind(rma2[,13:20], rma2[,1:12]), batch=batches, mod=mod)
 combat.tog[1:5,1:5]
 combat.tog1 <- cbind(combat.tog1[,9:20], combat.tog1[,1:8])
@@ -1332,20 +1280,15 @@ points(pc1[c(16,20)],pc2[c(16,20)], pch=20, col=5)
 text(pc1[c(16,20)],pc2[c(16,20)], labels=c("OSX OE1+BMP", "OSX OE2+BMP"), col=1, pos=3, offset=0.2, cex=0.8)
 
 ######
-
 rbind(combat.tog[rownames(combat.tog) %in% 7963664,], combat.sep[rownames(combat.sep) %in% 7963664,], (combat.tog[rownames(combat.tog) %in% 7963664,] - combat.sep[rownames(combat.sep) %in% 7963664,]))
 rbind(combat.tog1[rownames(combat.tog1) %in% 7963664,], combat.sep1[rownames(combat.sep1) %in% 7963664,], (combat.tog1[rownames(combat.tog1) %in% 7963664,] - combat.sep1[rownames(combat.sep1) %in% 7963664,]))
-
 
 save(combat.tog, combat.sep, combat.tog1, combat.sep1, file="combatobjects.rda")
 save(KD.rma1, OE.rma1, file="rmaobjects.rda")
 save(affy, affy1, affy3, file="affyobjects.rda")
 
-
-### limma. 
-
+##### limma. #####
 library(limma)
-
 Info <- read.csv(file="/Volumes/DanT-2TB/batcheinfo.csv", header=TRUE)
 design <- model.matrix(~ -1 + factor(Info$condition,levels=unique(Info$condition)))#creates design matrix for linear model
 colnames(design) <- unique(Info$condition)
@@ -1353,11 +1296,9 @@ design
 
 #adding bmp
 cont.matrix <- makeContrasts(control-controlbmp,levels=design)#creates contrast matrix 
-
 #kd
 cont.matrix <- makeContrasts(controlbmp-kdbmp,levels=design)
-
-#overexpression
+# overexpression
 cont.matrix <- makeContrasts(controlbmp-oebmp,levels=design)
 
 fit <- lmFit(combat.tog, design)
@@ -1370,7 +1311,7 @@ save(ModtPvals,file="ModtPvals.rda")
 length(fit2$p.value[fit2$p.value<0.01])#find out how many genes pass p-value cutoffs
 hist(fit2$p.value,breaks=50)
 
-#Volcano Plot - visualize the differentially expressed genes
+# Volcano Plot - visualize the differentially expressed genes
 plot(fit2$coef,-log10(fit2$p.value),xlab="logFC",ylab="-log(p)")
 title("Volcano Plot")
 abline(h=3,col="red");abline(v=+1,col="red");abline(v=-1,col="red")#creates cutoff lines at the p<0.001 and logFC>1 marks on plot
@@ -1382,30 +1323,26 @@ write.csv(AllGenes, file="control-controlbmpLimma.csv")
 write.csv(AllGenes, file="oebmp-controlbmpLimma.csv")
 write.csv(AllGenes, file="kdbmp-controlbmpLimma.csv")
 
-#we want to bind gene annotation onto this data table
-
+# we want to bind gene annotation onto this data table
 Annotation<-read.csv("hugeneinfo.csv",header=TRUE)#these files are available at Affymetrix.com for each array typ
-#Merge results, sample means and annotation
+
+# Merge results, sample means and annotation
 AllGenes<-merge(AllGenes,Annotation,by.x="Probe.Set.ID",by.y="Probe.Set")#both objects need a column named "Probe.Set.ID" for this to work
 AllGenes.sorted <- AllGenes[order(AllGenes$P.Value),]
 
-#Heatmap
-
+# Heatmap
 library(gplots)
 TopList<-combat.tog[AllGenes$Probe.Set.ID,]
 dim(TopList)
 colnames(TopList) <- Info[match(colnames(TopList),Info[,1]),3]
 colnames(TopList)
-
 heatmap.2(TopList[,colnames(TopList) %in% c("oebmp", "controlbmp")],col="redgreen",trace="none")
 
 ## ttest
-
 library(multtest)
 CL<-(Info$condition=="control")*(Info$condition=="control")
 tstats<-mt.teststat(combat.tog,CL,test="t.equalvar")
 tpvals<-2*pt(abs(tstats),df=54,lower.tail=FALSE)
-
 OrdtPvals<-data.frame(PSID=row.names(combat.tog),tpvals)
 OrdtPvals<- OrdtPvals[order(OrdtPvals[,2]),]
 
@@ -1418,7 +1355,8 @@ CL <- c(rep(1,5), rep(2,5))
 genematrix <- combat.tog[,match(Infocont$Filename,colnames(combat.tog))]
 samdata<-list(x=genematrix, y=CL, geneid=as.character(1:nrow(genematrix)), genenames=row.names(genematrix), logged2=TRUE)
 samr.pac<-samr(samdata, resp.typ="Two class unpaired", nperms=500)
-#pick out delta value closest to 0.1
+
+# pick out delta value closest to 0.1
 delta.table <- samr.compute.delta.table(samr.pac)
 delta.table
 del.max <- 0.592
@@ -1426,9 +1364,9 @@ del.min <- 0.498
 delta.table <- samr.compute.delta.table(samr.pac,dels=seq(del.min, del.max, 0.002))
 delta.table
 delta.opt <- 0.592
-#DEGs (Differentially Expressed Genes) Summary.
-siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 
+# DEGs (Differentially Expressed Genes) Summary.
+siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 up <- siggenes.table$genes.up
 down <- siggenes.table$genes.lo
 DEGs<-rbind(up,down) #bind high/low table rows
@@ -1436,7 +1374,6 @@ DEGs <- merge(DEGs,Annotation,by.x="Gene ID",by.y="Probe.Set")#both objects need
 write.csv(DEGs, file="controlbmp-controlSAM.csv")
 
 # controlbmp v oebmp
-
 Infocont <- Info[Info$condition=="controlbmp" | Info$condition=="oebmp",]
 Infocont <- Infocont[order(Infocont$condition),]
 Infocont
@@ -1446,7 +1383,7 @@ genematrix <- combat.tog[,match(Infocont$Filename,colnames(combat.tog))]
 samdata<-list(x=genematrix, y=CL, geneid=as.character(1:nrow(genematrix)), genenames=row.names(genematrix), logged2=TRUE)
 samr.pac<-samr(samdata, resp.typ="Two class unpaired", nperms=500)
 
-#pick out delta value closest to 0.1
+# pick out delta value closest to 0.1
 delta.table <- samr.compute.delta.table(samr.pac)
 delta.table
 del.max <- 0.587
@@ -1454,17 +1391,16 @@ del.min <- 0.515
 delta.table <- samr.compute.delta.table(samr.pac,dels=seq(del.min, del.max, 0.002))
 delta.table
 delta.opt <- 0.519
-#DEGs (Differentially Expressed Genes) Summary.
-siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 
+# DEGs (Differentially Expressed Genes) Summary.
+siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 up <- siggenes.table$genes.up
 down <- siggenes.table$genes.lo
 DEGs<-rbind(up,down) #bind high/low table rows
 DEGs <- merge(DEGs,Annotation,by.x="Gene ID",by.y="Probe.Set")#both objects need a column named "Probe.Set.ID" for this to work
 write.csv(DEGs, file="controlbmp-oebmpSAM.csv")
 
-#controlbmp v kdbmp
-
+# controlbmp v kdbmp
 Infocont <- Info[Info$condition=="controlbmp" | Info$condition=="kdbmp",]
 Infocont <- Infocont[order(Infocont$condition),]
 Infocont
@@ -1474,7 +1410,7 @@ genematrix <- combat.tog[,match(Infocont$Filename,colnames(combat.tog))]
 samdata<-list(x=genematrix, y=CL, geneid=as.character(1:nrow(genematrix)), genenames=row.names(genematrix), logged2=TRUE)
 samr.pac<-samr(samdata, resp.typ="Two class unpaired", nperms=500)
 
-#pick out delta value closest to 0.1
+# pick out delta value closest to 0.1
 delta.table <- samr.compute.delta.table(samr.pac)
 delta.table
 del.max <- 0.855
@@ -1482,26 +1418,20 @@ del.min <- 0.799
 delta.table <- samr.compute.delta.table(samr.pac,dels=seq(del.min, del.max, 0.002))
 delta.table
 delta.opt <- 0.841
-#DEGs (Differentially Expressed Genes) Summary.
-siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 
+# DEGs (Differentially Expressed Genes) Summary.
+siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 up <- siggenes.table$genes.up
 down <- siggenes.table$genes.lo
 DEGs<-rbind(up,down) #bind high/low table rows
 DEGs <- merge(DEGs,Annotation,by.x="Gene ID",by.y="Probe.Set")#both objects need a column named "Probe.Set.ID" for this to work
 write.csv(DEGs, file="controlbmp-kdbmpSAM.csv")
 
-
-
-
-
 ########## Now for RMA processed only files...
 rm(combat.sep, combat.sep1, combat.tog1)
-
 load("RMAobjects.rda")
 
 ####### 
-
 # control v controlbmp
 Infocont <- Info[Info$cond1=="control",]
 Infocont <- Infocont[Infocont$batch=="1",]
@@ -1520,9 +1450,8 @@ del.min <- 0.719
 delta.table <- samr.compute.delta.table(samr.pac,dels=seq(del.min, del.max, 0.002))
 delta.table
 delta.opt <- 0.807
-#DEGs (Differentially Expressed Genes) Summary.
+# DEGs (Differentially Expressed Genes) Summary.
 siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
-
 up <- siggenes.table$genes.up
 down <- siggenes.table$genes.lo
 DEGs<-rbind(up,down) #bind high/low table rows
@@ -1539,7 +1468,8 @@ CL <- c(rep(1,2), rep(2,2))
 genematrix <- OE.rma1[,match(Infocont$Filename,colnames(OE.rma1))]
 samdata<-list(x=genematrix, y=CL, geneid=as.character(1:nrow(genematrix)), genenames=row.names(genematrix), logged2=TRUE)
 samr.pac<-samr(samdata, resp.typ="Two class unpaired", nperms=500)
-#pick out delta value closest to 0.1
+
+# pick out delta value closest to 0.1
 delta.table <- samr.compute.delta.table(samr.pac)
 delta.table
 del.max <- 0.590
@@ -1547,9 +1477,9 @@ del.min <- 0.488
 delta.table <- samr.compute.delta.table(samr.pac,dels=seq(del.min, del.max, 0.002))
 delta.table
 delta.opt <- 0.538
-#DEGs (Differentially Expressed Genes) Summary.
-siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 
+# DEGs (Differentially Expressed Genes) Summary.
+siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 up <- siggenes.table$genes.up
 down <- siggenes.table$genes.lo
 DEGs<-rbind(up,down) #bind high/low table rows
@@ -1557,7 +1487,6 @@ DEGs <- merge(DEGs,Annotation,by.x="Gene ID",by.y="Probe.Set")#both objects need
 write.csv(DEGs, file="RMA.OEcontrolbmp-controlSAM.csv")
 
 # controlbmp v oebmp
-
 Infocont <- Info[Info$condition=="controlbmp" | Info$condition=="oebmp",]
 Infocont <- Infocont[Infocont$batch=="2",]
 Infocont <- Infocont[order(Infocont$condition),]
@@ -1568,7 +1497,7 @@ genematrix <- OE.rma1[,match(Infocont$Filename,colnames(OE.rma1))]
 samdata<-list(x=genematrix, y=CL, geneid=as.character(1:nrow(genematrix)), genenames=row.names(genematrix), logged2=TRUE)
 samr.pac<-samr(samdata, resp.typ="Two class unpaired", nperms=500)
 
-#pick out delta value closest to 0.1
+# pick out delta value closest to 0.1
 delta.table <- samr.compute.delta.table(samr.pac)
 delta.table
 del.max <- 1.12
@@ -1576,9 +1505,9 @@ del.min <- 1.02
 delta.table <- samr.compute.delta.table(samr.pac,dels=seq(del.min, del.max, 0.002))
 delta.table
 delta.opt <- 1.062
-#DEGs (Differentially Expressed Genes) Summary.
-siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 
+# DEGs (Differentially Expressed Genes) Summary.
+siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 up <- siggenes.table$genes.up
 down <- siggenes.table$genes.lo
 DEGs<-rbind(up,down) #bind high/low table rows
@@ -1586,7 +1515,6 @@ DEGs <- merge(DEGs,Annotation,by.x="Gene ID",by.y="Probe.Set")#both objects need
 write.csv(DEGs, file="RMAcontrolbmp-oebmpSAM.csv")
 
 #controlbmp v kdbmp
-
 Infocont <- Info[Info$condition=="controlbmp" | Info$condition=="kdbmp",]
 Infocont <- Infocont[Infocont$batch=="1",]
 Infocont <- Infocont[order(Infocont$condition),]
@@ -1597,7 +1525,7 @@ genematrix <- KD.rma1[,match(Infocont$Filename,colnames(KD.rma1))]
 samdata<-list(x=genematrix, y=CL, geneid=as.character(1:nrow(genematrix)), genenames=row.names(genematrix), logged2=TRUE)
 samr.pac<-samr(samdata, resp.typ="Two class unpaired", nperms=500)
 
-#pick out delta value closest to 0.1
+# pick out delta value closest to 0.1
 delta.table <- samr.compute.delta.table(samr.pac)
 delta.table
 del.max <- 1.281
@@ -1605,18 +1533,16 @@ del.min <- 1.177
 delta.table <- samr.compute.delta.table(samr.pac,dels=seq(del.min, del.max, 0.002))
 delta.table
 delta.opt <- 1.247
-#DEGs (Differentially Expressed Genes) Summary.
-siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 
+# DEGs (Differentially Expressed Genes) Summary.
+siggenes.table<-samr.compute.siggenes.table(samr.pac, delta.opt, samdata, delta.table, all.genes=FALSE)
 up <- siggenes.table$genes.up
 down <- siggenes.table$genes.lo
 DEGs<-rbind(up,down) #bind high/low table rows
 DEGs <- merge(DEGs,Annotation,by.x="Gene ID",by.y="Probe.Set")#both objects need a column named "Probe.Set.ID" for this to work
 write.csv(DEGs, file="RMAcontrolbmp-kdbmpSAM.csv")
 
-
-
-####### limma. 
+####### limma. #######
 #kd
 Infocont <- Info[Info$batch=="1",]
 design <- model.matrix(~ -1 + factor(Infocont$condition,levels=unique(Infocont$condition)))#creates design matrix for linear model
@@ -1625,10 +1551,8 @@ design
 
 #adding bmp
 cont.matrix <- makeContrasts(control-controlbmp,levels=design)#creates contrast matrix 
-
 #kd
 cont.matrix <- makeContrasts(controlbmp-kdbmp,levels=design)
-
 #kd
 cont.matrix <- makeContrasts(control-knockdown,levels=design)
 
@@ -1644,10 +1568,10 @@ hist(fit2$p.value,breaks=50)
 
 AllGenes<-topTable(fit2,number=nrow(KD.rma1),genelist=NULL,lfc=.59, sort.by="logFC",adjust.method="BH",p.value=0.05)
 AllGenes<-data.frame(Probe.Set.ID=row.names(AllGenes),AllGenes)
-#we want to bind gene annotation onto this data table
+# we want to bind gene annotation onto this data table
 setwd("/Users/Kristen/Documents/GustafsonLab")
 Annotation<-read.csv("hugeneinfo.csv",header=TRUE)#these files are available at Affymetrix.com for each array typ
-#Merge results, sample means and annotation
+# Merge results, sample means and annotation
 AllGenes<-merge(AllGenes,Annotation,by.x="Probe.Set.ID",by.y="Probe.Set")#both objects need a column named "Probe.Set.ID" for this to work
 
 write.csv(AllGenes, file="RMA.kdcontrol-controlbmpLimma.csv")
@@ -1663,13 +1587,10 @@ design
 
 #adding bmp
 cont.matrix <- makeContrasts(control-controlbmp,levels=design)#creates contrast matrix 
-
 #oe
 cont.matrix <- makeContrasts(controlbmp-oebmp,levels=design)
-
 #oe
 cont.matrix <- makeContrasts(control-overexpression,levels=design)
-
 
 fit <- lmFit(OE.rma1, design)
 fit2 <- contrasts.fit(fit, cont.matrix)
@@ -1683,22 +1604,18 @@ hist(fit2$p.value,breaks=50)
 
 AllGenes<-topTable(fit2,number=nrow(OE.rma1),genelist=NULL,lfc=.59, sort.by="logFC",adjust.method="BH",p.value=0.05)
 AllGenes<-data.frame(Probe.Set.ID=row.names(AllGenes),AllGenes)
-#we want to bind gene annotation onto this data table
+# we want to bind gene annotation onto this data table
 AllGenes<-merge(AllGenes,Annotation,by.x="Probe.Set.ID",by.y="Probe.Set")#both objects need a column named "Probe.Set.ID" for this to work
 
 write.csv(AllGenes, file="RMA.oecontrol-controlbmpLimma.csv")
 write.csv(AllGenes, file="RMAoebmp-controlbmpLimma.csv")
 write.csv(AllGenes, file="RMAcontrol-oeLimma.csv")
 
-### TO DO
-
-setwd("/Users/Kristen/Desktop/CEL Files")
-
-#double check FC are relative to control
-
+######## TO DO
+# double check FC are relative to control
 ### control vs oe, control vs kd
-
 ## write up quality control summary and pca summary
+setwd("/Users/Kristen/Desktop/CEL Files")
 ncol(OE.rma1)
 plotMA(KD.rma1, main="MA Plot for KD")
 pairs(KD.rma1, pch=".",main="Scatter plots",col=1:12) 
@@ -1710,7 +1627,6 @@ biomarkers <- c(8162373,8152512,8152617,8112971,8060850,8141140,8057506,8161919,
 
 setwd("/Users/Kristen/Documents/GustafsonLab")
 Annotation<-read.csv("hugeneinfo.csv",header=TRUE)
-
 Info <- fileinfo
 
 ####### limma. 
@@ -1722,10 +1638,8 @@ design
 
 #adding bmp
 cont.matrix <- makeContrasts(controlbmp-control,levels=design)#creates contrast matrix 
-
 #kd
 cont.matrix <- makeContrasts(kdbmp-controlbmp,levels=design)
-
 #kd
 cont.matrix <- makeContrasts(knockdown-control,levels=design)
 
@@ -1741,7 +1655,7 @@ hist(fit2$p.value,breaks=50)
 AllGenes<-topTable(fit2,number=nrow(KD.rma1),genelist=NULL, sort.by="logFC",adjust.method="BH")
 AllGenes<-data.frame(Probe.Set.ID=row.names(AllGenes),AllGenes)
 
-#Merge results, sample means and annotation
+# Merge results, sample means and annotation
 AllGenes<-merge(AllGenes,Annotation,by.x="Probe.Set.ID",by.y="Probe.Set")#both objects need a column named "Probe.Set.ID" for this to work
 
 write.csv(AllGenes, file="RMA.kdcontrol-controlbmpLimmaALL.csv")
@@ -1751,41 +1665,37 @@ write.csv(AllGenes, file="RMAcontrol-kdLimmaALL.csv")
 kd.biom <- AllGenes[AllGenes[,1] %in% biomarkers, ]
 write.csv(kd.biom, file="biomarkers_controlbmpvcontrol.csv")
 
-####### limma. 
-#oe
+####### limma. ######
+# oe
 Infocont <- Info[Info$batch=="2",]
 design <- model.matrix(~ -1 + factor(Infocont$condition,levels=unique(Infocont$condition)))#creates design matrix for linear model
 colnames(design) <- unique(Infocont$condition)
 design
 
-#adding bmp
+# adding bmp
 cont.matrix <- makeContrasts(controlbmp-control,levels=design)#creates contrast matrix 
-
-#oe
+# oe
 cont.matrix <- makeContrasts(oebmp-controlbmp,levels=design)
-
-#oe
+# oe
 cont.matrix <- makeContrasts(overexpression-control,levels=design)
-
 
 fit <- lmFit(OE.rma1, design)
 fit2 <- contrasts.fit(fit, cont.matrix)
 fit2 <- eBayes(fit2)
 
 ModtPvals<-data.frame(PSID=rownames(fit2$p.value),modtpvals=fit2$p.value,row.names=NULL)
-
 length(fit2$p.value[fit2$p.value<0.01])#find out how many genes pass p-value cutoffs
 hist(fit2$p.value,breaks=50)
 
 AllGenes<-topTable(fit2,number=nrow(OE.rma1),genelist=NULL,lfc=0, sort.by="logFC",adjust.method="BH",p.value=1)
 AllGenes<-data.frame(Probe.Set.ID=row.names(AllGenes),AllGenes)
-#we want to bind gene annotation onto this data table
+
+# We want to bind gene annotation onto this data table
 AllGenes<-merge(AllGenes,Annotation,by.x="Probe.Set.ID",by.y="Probe.Set")#both objects need a column named "Probe.Set.ID" for this to work
 
+# Write files
 write.csv(AllGenes, file="RMA.oecontrol-controlbmpLimmaALL.csv")
 write.csv(AllGenes, file="RMAoebmp-controlbmpLimma0.5.csv")
 write.csv(AllGenes, file="RMAcontrol-oeLimmaALL.csv")
-
 oe.biom <- AllGenes[AllGenes[,1] %in% biomarkers, ]
 write.csv(oe.biom, file="biomarkers_controlvoe.csv")
-
