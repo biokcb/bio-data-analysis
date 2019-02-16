@@ -23,6 +23,8 @@ def get_args():
                         help='Output file name')
     parser.add_argument('-t', '--tophat-folder', metavar='TOPHAT_FOLDER', required=True,
                         help='Prefix for naming tophat folders')
+    parser.add_argument('-r', '--reference', metavar='REFERENCE', required=True,
+                        help='Path to + prefix for references')
 
     args = parser.parse_args()
 
@@ -58,10 +60,10 @@ def read_fastq(fastq_file):
     """
     while True:
         # Read in 4 lines at a time
-        seq_header = f.readline().strip()
-        seq = f.readline().strip()
-        seq_comment = f.readline().strip()
-        seq_quality = f.readline().strip()
+        seq_header = fastq_file.readline().strip()
+        seq = fastq_file.readline().strip()
+        seq_comment = fastq_file.readline().strip()
+        seq_quality = fastq_file.readline().strip()
 
         if not seq_quality:
             break
@@ -80,7 +82,7 @@ def replace_header(fastq_file, output_file):
         A fastq file named by 'output_file' with new headers:
         @seq1 .... @seqN
     """
-    with open(fastq_file), open(output_file, 'a') as infile, outfile:
+    with open(fastq_file) as infile, open(output_file, 'a') as outfile:
         seq_count = 0
         for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
             # Replace the header & write to the new file
@@ -101,10 +103,10 @@ def append_trim_success(output_file, i, tophat_folder):
     """
     # Convert to fastq
     run_cmd("samtools bam2fq ./" + tophat_folder + "/accepted_hits.bam > mappedTEMP.fq")
-    
-    with open("mappedTemp.fq"), open(output_file, 'a') as mapped, outfile:
+
+    with open("mappedTemp.fq") as mapped, open(output_file, 'a') as outfile:
         seq_count = 0
-        for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
+        for seq_header, seq, _, _ in read_fastq(mapped):
             if i > 1:
                 seq_name, trim_seq = seq_header.split(":")
             else:
@@ -113,7 +115,7 @@ def append_trim_success(output_file, i, tophat_folder):
             final_list = [seq_name + '\t', seq + '\t', str(i) + '\t', trim_seq + '\n']
             outfile.writelines(final_list)
             seq_count += 1
-    
+
     run_cmd("rm mappedTEMP.fq")
     print("Processed " + str(seq_count) + " mapped sequences!")
 
@@ -129,7 +131,7 @@ def trim_hits(in_file, output_file, i, add=False):
         add: boolean indicating whether or not it is being added to an existing fq
     """
     if add:
-        with open(in_file), open("seqTemp.fq", 'a') as infile, outfile:
+        with open(in_file) as infile, open("seqTemp.fq", 'a') as outfile:
             for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
                 if i > 1:
                     seq_name, trim_seq = seq_header.split(":")
@@ -148,8 +150,8 @@ def trim_hits(in_file, output_file, i, add=False):
 
     else:
         run_cmd("samtools bam2fq ./" + in_file + "/unmapped.bam > unmappedTEMP.fq")
-        with open('unmappedTemp.fq'), open("seqTemp.fq", 'a') as infile, outfile:
-            for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
+        with open('unmappedTemp.fq') as unmapped, open("seqTemp.fq", 'a') as outfile:
+            for seq_header, seq, seq_comment, seq_quality in read_fastq(unmapped):
                 if i > 1:
                     seq_name, trim_seq = seq_header.split(":")
                 else:
@@ -188,7 +190,7 @@ def main():
             --read-edit-dist 0 
             -p 6 
             -o """ + args.tophat_folder + str(i)
-            + " ./mcherry_ref/mcherry " + new_fastq_file)
+            + " " + args.reference + " " + new_fastq_file)
 
     append_trim_success(args.output_file, i, args.tophat_folder + str(i))
     trim_hits(args.tophat_folder + str(i), "sequences_" + str(i) + ".fq", i, add=False)
@@ -213,7 +215,7 @@ def main():
                 --read-edit-dist 0 
                 -p 6 
                 -o """ + args.tophat_folder + str(i)
-                + " ./mcherry_ref/mcherry " + new_fastq_file)
+                + " " + args.reference + " " + new_fastq_file)
 
         # Only append the trimmed hits if it aligned
         if os.path.isfile(args.tophat_folder + str(i) + "/accepted_hits.bam"):
