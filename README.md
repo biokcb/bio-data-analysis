@@ -1,5 +1,9 @@
 # Scripts for biological data analysis
-Scripts I've written for analyzing various types of data that were not large enough projects to warrant their own repository. Mainly for analyzing and plotting next generation sequencing data, but other random scripts may get tossed in here from time to time. Many of these may be dataset and project specific - sometimes the specific analysis is done first then generalized. 
+Scripts I've written that were not large enough projects to warrant their own repository. Many of these are dataset and project specific. This is an *incomplete history* of scripts written and used over the years and will be updated as I find old scripts or create new ones. If you look through them, it sort of represents my progress in learning to write better code, so there's a range of skill level represented here, especially as a self-taught programmer from a more scientific background. Sometimes I go back and update the scripts as well, especially if I start needing to repeat analyses. 
+
+
+**Note**: Anything with a date in the name is a specific analysis that is more of a history of commands used to perform that analysis and is less likely to be reused. 
+
 
 # Folders
 This is organized into folders based on broader categories for the type of data analysis or if it was a short, individual project. Here is the basic breakdown:
