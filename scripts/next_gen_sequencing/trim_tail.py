@@ -5,7 +5,6 @@ of tailing or trimming in mRNA targeted by small RNA factors.
 
 This script requires TopHat2 and samtools.
 """
-
 import argparse
 import os.path
 import subprocess
@@ -47,109 +46,91 @@ def run_cmd(cmd):
 
     return output, error
 
-def grab_lines(input_file, num_lines):
+def read_fastq(fastq_file):
     """
-    This function grabs the specified number of lines from a file.
-    return a list containing num lines from
-    a file.
+    Reads the fastq file, assuming 4 lines per entry.
 
     Inputs:
-        input_file: file to grab lines from
-        num_lines: number of lines to grab
+        fastq_file: the open file handle
+
+    Outputs:
+        yields the four lines per sequence
     """
-    file_list = []
-    append = file_list.append
+    while True:
+        # Read in 4 lines at a time
+        seq_header = f.readline().strip()
+        seq = f.readline().strip()
+        seq_comment = f.readline().strip()
+        seq_quality = f.readline().strip()
 
-    for i in num_lines:
-        line = str(input_file[i]).strip('\n')
-        append(line.strip('\n'))
+        if not seq_quality:
+            break
 
-    return file_list
-
-def add_line(final_list, filename):
-    """
-    Add lines to a file
-
-    final_list = list of lines to add
-    filename = file to add to
-    """
-    with open(filename, "a") as f:
-        f.writelines(final_list)
+        yield seq_header, seq, seq_comment, seq_quality
 
 def replace_header(fastq_file, output_file):
     """
     Replace header of a fastq file with a simpler name for compatibility with certain tools.
 
-  Inputs:
-      fastq_file = input fastq file to clean
-      output_file = output file name to write
+    Inputs:
+        fastq_file = input fastq file to clean
+        output_file = output file name to write
 
-  Outputs:
-      A fastq file named by 'output_file' with new headers:
-
-      @seq1 .... @seqN
-  """
-  # get number of lines first
-    with open(fastq_file) as f:
-        size = sum(1 for _ in f)
-
-  # replace header
-    with open(fastq_file) as fq:
-        fastq = fq.readlines()
-        lines = (0, 1, 2, 3)
+    Outputs:
+        A fastq file named by 'output_file' with new headers:
+        @seq1 .... @seqN
+    """
+    with open(fastq_file), open(output_file, 'a') as infile, outfile:
         seq_count = 0
-
-        while lines[0] < size:
-            seq_header, seq, seq_comment, seq_quality = grab_lines(fastq, lines)
+        for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
+            # Replace the header & write to the new file
+            seq_header = '@seq_' + str(seq_count)
+            final_list = '\n'.join([seq_header, seq, seq_comment, seq_quality])
+            outfile.writelines(final_list)
             seq_count += 1
-            final_list = '\n'.join(['@seq' + str(seq_count), seq, seq_comment, seq_quality])
-            add_line(final_list, output_file)
-            lines = (lines[0] + 4, lines[1] + 4, lines[2] + 4, lines[3] + 4)
 
-# write accepted hits table
 def append_trim_success(output_file, i, tophat_folder):
     """
-    Append the successfully trimmed nucleotides
-    to the header of a mapped sequence if the
+    Append the successfully trimmed nucleotides to the header of a mapped sequence if the
     sequence was mapped.
+
+    Inputs:
+        output_file: The file to write appended hits to
+        i: the loop number
+        tophat_folder: the tophat folder to read aligned hits from
     """
+    # Convert to fastq
     run_cmd("samtools bam2fq ./" + tophat_folder + "/accepted_hits.bam > mappedTEMP.fq")
-    with open("mappedTemp.fq") as f:
-        size = sum(1 for _ in f)
-    f.close()
-    with open("mappedTemp.fq") as f:
-        fastq = f.readlines()
-        lines = (0, 1)
+    
+    with open("mappedTemp.fq"), open(output_file, 'a') as mapped, outfile:
         seq_count = 0
-        while lines[0] < size:
-            seq_header, seq = grab_lines(fastq, lines)
-            seq_count += 1
+        for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
             if i > 1:
                 seq_name, trim_seq = seq_header.split(":")
             else:
                 seq_name = seq_header
                 trim_seq = ''
-            final_list = [seq_name+'\t', seq+'\t', str(i)+'\t', trim_seq+'\n']
-            addLine(final_list, output_file)
-            lines = (lines[0] + 4, lines[1] + 4)
+            final_list = [seq_name + '\t', seq + '\t', str(i) + '\t', trim_seq + '\n']
+            outfile.writelines(final_list)
+            seq_count += 1
+    
     run_cmd("rm mappedTEMP.fq")
     print("Processed " + str(seq_count) + " mapped sequences!")
-    f.close()
 
 def trim_hits(in_file, output_file, i, add=False):
     """
-    Trim a nucleotide of the end of a sequence
-    and store the trimmed nucleotide in the
+    Trim a nucleotide of the end of a sequence and store the trimmed nucleotide in the
     header for later.
+
+    Inputs:
+        in_file: the input file to process
+        output_file: the output file to write to
+        i: the loop number
+        add: boolean indicating whether or not it is being added to an existing fq
     """
     if add:
-        with open(in_file) as f:
-            size = sum(1 for _ in f)
-        with open(in_file) as f:
-            fastq = f.readlines()
-            lines = (0, 1, 2, 3)
-            while lines[0] < size:
-                seq_header, seq, seq_comment, seq_quality = grab_lines(fastq, lines)
+        with open(in_file), open("seqTemp.fq", 'a') as infile, outfile:
+            for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
                 if i > 1:
                     seq_name, trim_seq = seq_header.split(":")
                 else:
@@ -160,20 +141,15 @@ def trim_hits(in_file, output_file, i, add=False):
                 final_list = '\n'.join([seq_name + ":" + seq[-1:] + trim_seq,
                                         new_seq, seq_comment, new_seq_qual])
                 if len(new_seq) > 29:
-                    add_line(final_list, "seqTemp.fq")
-                lines = (lines[0] + 4, lines[1] + 4, lines[2] + 4, lines[3] + 4)
-        f.close()
+                    outfile.writelines(final_list)
+
         run_cmd("rm " + in_file)
         run_cmd("mv seqTemp.fq " + output_file)
+
     else:
         run_cmd("samtools bam2fq ./" + in_file + "/unmapped.bam > unmappedTEMP.fq")
-        with open("unmappedTemp.fq") as fq:
-            size = sum(1 for _ in fq)
-        with open("unmappedTemp.fq") as fq:
-            fastq = fq.readlines()
-            lines = (0, 1, 2, 3)
-            while lines[0] < size:
-                seq_header, seq, seq_comment, seq_quality = grab_lines(fastq, lines)
+        with open('unmappedTemp.fq'), open("seqTemp.fq", 'a') as infile, outfile:
+            for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
                 if i > 1:
                     seq_name, trim_seq = seq_header.split(":")
                 else:
@@ -184,8 +160,7 @@ def trim_hits(in_file, output_file, i, add=False):
                 final_list = '\n'.join([seq_name + ":" + seq[-1:] + trim_seq,
                                         new_seq, seq_comment, new_seq_qual])
                 if len(new_seq) > 29:
-                    add_line(final_list, output_file)
-                lines = (lines[0] + 4, lines[1] + 4, lines[2] + 4, lines[3] + 4)
+                    outfile.writelines(final_list)
         run_cmd("rm unmappedTEMP.fq")
 
 def main():
