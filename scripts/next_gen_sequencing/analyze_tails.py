@@ -3,7 +3,8 @@
 A script for analyzing the trimming and tailing of mRNA sequencing data for signatures
 of tailing or trimming in mRNA targeted by small RNA factors.
 
-This script requires TopHat2 and samtools.
+This script requires TopHat2 and samtools. The input fastq should be the unmapped reads
+from initial alignment.
 """
 import argparse
 import os.path
@@ -82,12 +83,24 @@ def replace_header(fastq_file, output_file):
         A fastq file named by 'output_file' with new headers:
         @seq1 .... @seqN
     """
+    print('Replacing header for %s' %fastq_file)
+
+    seq_count = 0
+    
+    if os.path.isfile(output_file):
+        print('Warning: The file %s exists and will be overwritten...' % output_file)
+        with open(fastq_file) as infile, open(output_file, 'w') as outfile:
+            seq_header, seq, seq_comment, seq_quality = next(read_fastq(infile))
+            seq_header = '@seq_' + str(seq_count)
+            final_list = '\n'.join([seq_header, seq, seq_comment, seq_quality + '\n'])
+            outfile.writelines(final_list)
+        seq_count += 1
+
     with open(fastq_file) as infile, open(output_file, 'a') as outfile:
-        seq_count = 0
         for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
             # Replace the header & write to the new file
             seq_header = '@seq_' + str(seq_count)
-            final_list = '\n'.join([seq_header, seq, seq_comment, seq_quality])
+            final_list = '\n'.join([seq_header, seq, seq_comment, seq_quality + '\n'])
             outfile.writelines(final_list)
             seq_count += 1
 
@@ -130,6 +143,7 @@ def trim_hits(in_file, output_file, i, add=False):
         i: the loop number
         add: boolean indicating whether or not it is being added to an existing fq
     """
+    print('Trimming one nucleotide from sequences...iteration %d' % i)
     if add:
         with open(in_file) as infile, open("seqTemp.fq", 'a') as outfile:
             for seq_header, seq, seq_comment, seq_quality in read_fastq(infile):
@@ -141,7 +155,7 @@ def trim_hits(in_file, output_file, i, add=False):
                 new_seq = seq[0:len(seq)-1]
                 new_seq_qual = seq_quality[0:len(seq_quality)-1]
                 final_list = '\n'.join([seq_name + ":" + seq[-1:] + trim_seq,
-                                        new_seq, seq_comment, new_seq_qual])
+                                        new_seq, seq_comment, new_seq_qual + '\n'])
                 if len(new_seq) > 29:
                     outfile.writelines(final_list)
 
@@ -150,7 +164,7 @@ def trim_hits(in_file, output_file, i, add=False):
 
     else:
         run_cmd("samtools bam2fq ./" + in_file + "/unmapped.bam > unmappedTEMP.fq")
-        with open('unmappedTemp.fq') as unmapped, open("seqTemp.fq", 'a') as outfile:
+        with open('unmappedTemp.fq') as unmapped, open(output_file, 'a') as outfile:
             for seq_header, seq, seq_comment, seq_quality in read_fastq(unmapped):
                 if i > 1:
                     seq_name, trim_seq = seq_header.split(":")
@@ -160,7 +174,7 @@ def trim_hits(in_file, output_file, i, add=False):
                 new_seq = seq[0:len(seq)-1]
                 new_seq_qual = seq_quality[0:len(seq_quality)-1]
                 final_list = '\n'.join([seq_name + ":" + seq[-1:] + trim_seq,
-                                        new_seq, seq_comment, new_seq_qual])
+                                        new_seq, seq_comment, new_seq_qual + '\n'])
                 if len(new_seq) > 29:
                     outfile.writelines(final_list)
         run_cmd("rm unmappedTEMP.fq")
@@ -180,18 +194,23 @@ def main():
 
     # Start with sequences that did not map to WS230 (tophat was run 1x)
     i = 1
-    run_cmd("""
-            tophat --library-type fr-firststrand 
-            -N 0 
-            -i 30 
-            --read-gap-length 0 
-            --max-insertion-length 0 
-            --max-deletion-length 0 
-            --read-edit-dist 0 
-            -p 6 
-            -o """ + args.tophat_folder + str(i)
-            + " " + args.reference + " " + new_fastq_file)
+    run_cmd('tophat ' + 
+            '--library-type fr-firststrand ' +
+            '-N 0 ' +
+            '-i 30 ' +
+            '--read-gap-length 0 ' +
+            '--max-insertion-length 0 ' +
+            '--max-deletion-length 0 ' +
+            '--read-edit-dist 0 ' +
+            '-p 6 ' +
+            '-o ' + args.tophat_folder + str(i)
+            + ' ' + args.reference 
+            + ' ' + new_fastq_file)
 
+    if os.path.isfile(args.output_file):
+        print('Warning: The file %s exists already and will be overwritten...' % args.output_file)
+        with open(args.output_file, 'w') as outfile:
+            outfile.write('')
     append_trim_success(args.output_file, i, args.tophat_folder + str(i))
     trim_hits(args.tophat_folder + str(i), "sequences_" + str(i) + ".fq", i, add=False)
     file_num = i
@@ -203,19 +222,19 @@ def main():
         print('Now processing alignment iteration ' + str(i) + '\n')
         new_fastq_file = "sequences_" + str(file_num) + ".fq"
         i += 1
-        run_cmd("""
-                tophat 
-                --no-coverage-search 
-                --library-type fr-firststrand 
-                -N 0 
-                -i 30 
-                --max-insertion-length 0 
-                --read-gap-length 0 
-                --max-deletion-length 0 
-                --read-edit-dist 0 
-                -p 6 
-                -o """ + args.tophat_folder + str(i)
-                + " " + args.reference + " " + new_fastq_file)
+        run_cmd('tophat ' +
+                '--no-coverage-search '
+                '--library-type fr-firststrand '
+                '-N 0 '
+                '-i 30 '
+                '--max-insertion-length 0 '
+                '--read-gap-length 0 '
+                '--max-deletion-length 0 '
+                '--read-edit-dist 0 '
+                '-p 6 '
+                '-o ' + args.tophat_folder + str(i) +
+                ' ' + args.reference + 
+                ' ' + new_fastq_file)
 
         # Only append the trimmed hits if it aligned
         if os.path.isfile(args.tophat_folder + str(i) + "/accepted_hits.bam"):
@@ -227,6 +246,7 @@ def main():
                       "sequences_" + str(file_num) + ".fq", i, add=True)
 
     # remove temporary tophat files to avoid clogging things up
+    print('Cleaning up temporary files...')
     run_cmd("rm -rf sequences_*")
     run_cmd("rm -rf " + args.tophat_folder + "*")
 
