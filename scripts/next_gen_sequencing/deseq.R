@@ -16,7 +16,7 @@ if (length(args) > 6){
 
         %s
 
-        Did you add a space in a list?", args[5:length(args)]))
+        Did you add a space in a list?", args[7:length(args)]))
 } else if (length(args) < 6){
   stop(sprintf("Not enough arguments given. Only parsed %d arguments.", length(args)))
 } else if (length(args) == 0){
